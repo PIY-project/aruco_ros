@@ -48,6 +48,9 @@
 
 #include <dynamic_reconfigure/server.h>
 #include <aruco_ros/ArucoThresholdConfig.h>
+#include <sensor_msgs/Image.h>
+#include <aruco_msgs/MarkerReq.h>
+
 
 class ArucoSimple
 {
@@ -67,6 +70,7 @@ private:
   ros::Publisher position_pub;
   ros::Publisher marker_pub; // rviz visualization marker
   ros::Publisher pixel_pub;
+  ros::ServiceServer serverMarker;
   std::string marker_frame;
   std::string camera_frame;
   std::string reference_frame;
@@ -136,6 +140,8 @@ public:
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
 
+    serverMarker = nh.advertiseService("aruco", &ArucoSimple::callbackServerMarker, this);
+
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
     nh.param<std::string>("reference_frame", reference_frame, "");
@@ -180,6 +186,66 @@ public:
 
     }
     return true;
+  }
+
+  bool callbackServerMarker(aruco_msgs::MarkerReq::Request  &req, aruco_msgs::MarkerReq::Response &res)
+  {
+    static tf::TransformBroadcaster br;
+    if (cam_info_received)
+    {
+      ros::Time curr_stamp = req.image.header.stamp;
+      cv_bridge::CvImagePtr cv_ptr;
+      try
+      {
+        cv_ptr = cv_bridge::toCvCopy(req.image, sensor_msgs::image_encodings::RGB8);
+        inImage = cv_ptr->image;
+
+        // detection results will go into "markers"
+        markers.clear();
+        // ok, let's detect
+        mDetector.detect(inImage, markers, camParam, marker_size, false);
+        // for each marker, draw info and its boundaries in the image
+        for (std::size_t i = 0; i < markers.size(); ++i)
+        {
+          // only publishing the selected marker
+          if (markers[i].id == marker_id)
+          {
+            tf::Transform transform = aruco_ros::arucoMarker2Tf(markers[i]);
+            tf::StampedTransform cameraToReference;
+            cameraToReference.setIdentity();
+
+            if (reference_frame != camera_frame)
+            {
+              getTransform(reference_frame, camera_frame, cameraToReference);
+            }
+
+            transform = static_cast<tf::Transform>(cameraToReference) * static_cast<tf::Transform>(rightToLeft)
+                * transform;
+
+            tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
+            br.sendTransform(stampedTransform);
+            geometry_msgs::PoseStamped poseMsg;
+            tf::poseTFToMsg(transform, poseMsg.pose);
+            res.marker.header.frame_id = reference_frame;
+            res.marker.header.stamp = curr_stamp;
+            res.marker.pose.pose = poseMsg.pose;
+            res.marker.id = markers[i].id;
+            res.marker.pixel.x = markers[i].getCenter().x;
+            res.marker.pixel.y = markers[i].getCenter().y;
+            res.marker.pixel.z = 0;
+            res.detected = true;
+          }
+          else res.detected = false;
+        }
+        return true;
+      }
+      catch (cv_bridge::Exception& e)
+      {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return false;
+      }
+    }
+    else return false;
   }
 
   void image_callback(const sensor_msgs::ImageConstPtr& msg)

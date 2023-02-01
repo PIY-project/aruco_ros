@@ -1,0 +1,4 @@
+sensor_msgs/Image image
+---
+aruco_msgs/Marker marker
+bool detected
