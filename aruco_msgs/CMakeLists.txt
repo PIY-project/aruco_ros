@@ -11,6 +11,7 @@ add_message_files( FILES Marker.msg MarkerArray.msg )
 add_service_files(
   FILES
   MarkerReq.srv
+  MarkersReq.srv
 )
 generate_messages( DEPENDENCIES std_msgs geometry_msgs sensor_msgs)
 

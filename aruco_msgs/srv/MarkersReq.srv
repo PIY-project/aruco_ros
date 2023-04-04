@@ -1,0 +1,8 @@
+sensor_msgs/Image image
+sensor_msgs/CameraInfo info
+std_msgs/Bool isRectified
+std_msgs/Float64 markerSize
+std_msgs/Int32[] ids
+---
+aruco_msgs/Marker[] markers
+bool result
