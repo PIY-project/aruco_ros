@@ -150,6 +150,9 @@ public:
                     tmpMarker.header.stamp = curr_stamp;
                     tmpMarker.pose.pose = poseMsg.pose;
                     tmpMarker.id = markers[k].id;
+                    tmpMarker.point.x = markers[k].getCenter().x;
+                    tmpMarker.point.y = markers[k].getCenter().y;
+                    tmpMarker.point.z = 0;
                     // tmpMarker.pixel.x = markers[k].getCenter().x;
                     // tmpMarker.pixel.y = markers[k].getCenter().y;
                     // tmpMarker.pixel.z = 0;
