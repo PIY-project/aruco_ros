@@ -153,6 +153,17 @@ public:
                     tmpMarker.point.x = markers[k].getCenter().x;
                     tmpMarker.point.y = markers[k].getCenter().y;
                     tmpMarker.point.z = 0;
+                    for(int n= 0;n < 4; n++)
+                    {
+                      geometry_msgs::Point tmp_pixel;
+                      tmp_pixel.x = markers[k][n].x;
+                      tmp_pixel.y = markers[k][n].y;
+                      tmp_pixel.z = 0;
+                      tmpMarker.pixels.push_back(tmp_pixel);
+
+                    }
+                    // tmpMarker.pixel_x = markers[k][0].x;
+                    // int testy = markers[k][0].y;
                     // tmpMarker.pixel.x = markers[k].getCenter().x;
                     // tmpMarker.pixel.y = markers[k].getCenter().y;
                     // tmpMarker.pixel.z = 0;
